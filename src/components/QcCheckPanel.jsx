@@ -1,5 +1,9 @@
 import { useState, useRef } from "react";
-import { uploadBatch, uploadPdf, runCheck } from "../api";
+import { uploadBatch, uploadPdf, runCheck, listFiles } from "../api";
+
+// Check if running on cloud (not localhost)
+
+const IS_CLOUD = !window.location.hostname.includes("localhost");
 
 const DEFAULT_CHECKS = {
   crop_size: true,
@@ -18,6 +22,7 @@ export default function QcCheckPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const [expectedW, setExpectedW] = useState("");
   const [expectedH, setExpectedH] = useState("");
@@ -51,15 +56,25 @@ export default function QcCheckPanel() {
     try {
       const upData = await uploadBatch(files);
       setUploadedFolder(upData.folder);
+      setFiles([]);
 
       if (pdfFile) {
         const pdfData = await uploadPdf(pdfFile);
         setPdfPath(pdfData.pdf_path);
+        setPdfFile(null);
       } else {
         setPdfPath("");
       }
+
+      try {
+        const listRes = await listFiles(upData.folder);
+        setUploadedFiles(listRes.files || []);
+      } catch {
+        setUploadedFiles([]);
+      }
     } catch (err) {
       setError(err.response?.data?.error || "Upload failed.");
+    } finally {
       setLoading(false);
     }
   }
@@ -133,6 +148,12 @@ export default function QcCheckPanel() {
           </button>
         </div>
 
+        {IS_CLOUD && (
+          <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#9a3412" }}>
+            ⚠️ Running on cloud — use <strong>Upload</strong> above. Folder paths only work if the backend is running on a machine that has access to those folders.
+          </div>
+        )}
+
         <div style={{ borderTop: "1px solid #e7e5e4", paddingTop: 16, marginBottom: 16 }}>
           <p className="subtitle" style={{ marginBottom: 8, fontWeight: 600, color: "#292524" }}>Or use a server folder path:</p>
           <div className="field">
@@ -142,8 +163,18 @@ export default function QcCheckPanel() {
         </div>
 
         {uploadedFolder && (
-          <div className="login-success" style={{ marginBottom: 16 }}>
-            Uploaded to: {uploadedFolder}
+          <div className="login-success" style={{ marginBottom: 12 }}>
+            ✅ Upload successful — {uploadedFiles.length} file(s) ready for checking
+          </div>
+        )}
+        {uploadedFiles.length > 0 && (
+          <div style={{ marginBottom: 16, fontSize: 13 }}>
+            <strong>Uploaded files:</strong>
+            <div style={{ maxHeight: 120, overflowY: "auto", marginTop: 6, background: "#fafaf9", borderRadius: 8, padding: "6px 10px", border: "1px solid #e7e5e4" }}>
+              {uploadedFiles.map((f, i) => (
+                <div key={i} style={{ padding: "2px 0", color: "#57534e", fontSize: 12, fontFamily: "monospace" }}>{f}</div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -96,6 +96,11 @@ export async function uploadPdf(file) {
     { headers: { ...authHeaders(), "Content-Type": "multipart/form-data" } });
   return res.data;
 }
+export async function listFiles(folder) {
+  const res = await axios.post(`${API_BASE}/api/list-files`,
+    { folder }, { headers: authHeaders() });
+  return res.data;
+}
 export async function runCheck(payload) {
   const res = await axios.post(`${API_BASE}/api/check`, payload, { headers: authHeaders() });
   return res.data;
