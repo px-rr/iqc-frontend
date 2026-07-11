@@ -17,6 +17,7 @@ export default function QcCheckPanel() {
   const [files, setFiles] = useState([]);
   const [pdfFile, setPdfFile] = useState(null);
   const [folder, setFolder] = useState("");
+  const [filePath, setFilePath] = useState("");
   const [uploadedFolder, setUploadedFolder] = useState("");
   const [pdfPath, setPdfPath] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,21 +84,34 @@ export default function QcCheckPanel() {
     setError("");
     setResults(null);
 
-    const activeFolder = uploadedFolder || folder.trim();
-    if (!activeFolder) {
-      setError("Upload images or enter a server folder path first.");
-      return;
-    }
+    let payload;
 
-    const payload = {
-      folder: activeFolder,
-      expected_width: parseInt(expectedW) || 0,
-      expected_height: parseInt(expectedH) || 0,
-      min_buffer: parseInt(minBuffer) || 0,
-      center_tolerance: parseInt(centerTol) || 0,
-      naming_suffix: namingSuffix.trim(),
-      checks: checks,
-    };
+    if (filePath.trim()) {
+      payload = {
+        file_path: filePath.trim(),
+        expected_width: parseInt(expectedW) || 0,
+        expected_height: parseInt(expectedH) || 0,
+        min_buffer: parseInt(minBuffer) || 0,
+        center_tolerance: parseInt(centerTol) || 0,
+        naming_suffix: namingSuffix.trim(),
+        checks: checks,
+      };
+    } else {
+      const activeFolder = uploadedFolder || folder.trim();
+      if (!activeFolder) {
+        setError("Upload images, enter a server folder path, or provide a file path.");
+        return;
+      }
+      payload = {
+        folder: activeFolder,
+        expected_width: parseInt(expectedW) || 0,
+        expected_height: parseInt(expectedH) || 0,
+        min_buffer: parseInt(minBuffer) || 0,
+        center_tolerance: parseInt(centerTol) || 0,
+        naming_suffix: namingSuffix.trim(),
+        checks: checks,
+      };
+    }
     if (pdfPath) payload.pdf_path = pdfPath;
 
     setLoading(true);
@@ -155,10 +169,16 @@ export default function QcCheckPanel() {
         )}
 
         <div style={{ borderTop: "1px solid #e7e5e4", paddingTop: 16, marginBottom: 16 }}>
-          <p className="subtitle" style={{ marginBottom: 8, fontWeight: 600, color: "#292524" }}>Or use a server folder path:</p>
+          <p className="subtitle" style={{ marginBottom: 8, fontWeight: 600, color: "#292524" }}>Or enter a path directly:</p>
+          <div className="field" style={{ marginBottom: 8 }}>
+            <label>Single File Path</label>
+            <input value={filePath} onChange={(e) => { setFilePath(e.target.value); setFolder(''); }}
+              placeholder="e.g. C:\Work\Target\image.tif or /mnt/shared/Target/image.tif" />
+          </div>
           <div className="field">
-            <input value={folder} onChange={(e) => setFolder(e.target.value)}
-              placeholder="e.g. Z:\Shared\Target\Batch1 or Target/Batch1" />
+            <label>Folder Path (checks all images inside)</label>
+            <input value={folder} onChange={(e) => { setFolder(e.target.value); setFilePath(''); }}
+              placeholder="e.g. C:\Work\Target\Batch1 or Target/Batch1" />
           </div>
         </div>
 
